@@ -1,0 +1,151 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOperator() {
+      return isAuthenticated()
+        && request.auth.uid == '77rBmRDzilXGdBqryH9kcpRjHSu1';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function validParkingLot(data) {
+      return data.keys().hasOnly([
+          'name', 'station', 'stationType', 'city', 'state', 'area', 'distance', 'walk',
+          'fullDayPrice', 'overnightPrice', 'available', 'total',
+          'availableTwoWheeler', 'totalTwoWheeler', 'availableFourWheeler', 'totalFourWheeler',
+          'rating', 'accent', 'features', 'coordinates', 'status', 'operatorId'
+        ])
+        && data.keys().hasAll([
+          'name', 'station', 'stationType', 'city', 'state', 'area', 'distance', 'walk',
+          'fullDayPrice', 'overnightPrice', 'available', 'total',
+          'availableTwoWheeler', 'totalTwoWheeler', 'availableFourWheeler', 'totalFourWheeler',
+          'rating', 'accent', 'features', 'coordinates', 'status', 'operatorId'
+        ])
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+         && data.station is string && data.station.size() > 0 && data.station.size() <= 100
+         && data.stationType in ['metro', 'railway']
+         && data.city == 'Hyderabad'
+         && data.state == 'Telangana'
+        && data.area is string && data.area.size() <= 150
+        && data.distance is string && data.distance.size() <= 30
+        && data.walk is string && data.walk.size() <= 30
+        && data.fullDayPrice is number && data.fullDayPrice > 0 && data.fullDayPrice <= 100000
+        && data.overnightPrice is number && data.overnightPrice > 0 && data.overnightPrice <= 100000
+        && data.available is number && data.available >= 0
+        && data.total is number && data.total > 0
+        && data.available <= data.total
+        && data.availableTwoWheeler is number && data.availableTwoWheeler >= 0
+        && data.totalTwoWheeler is number && data.totalTwoWheeler > 0
+        && data.availableTwoWheeler <= data.totalTwoWheeler
+        && data.availableFourWheeler is number && data.availableFourWheeler >= 0
+        && data.totalFourWheeler is number && data.totalFourWheeler > 0
+        && data.availableFourWheeler <= data.totalFourWheeler
+        && data.available == data.availableTwoWheeler + data.availableFourWheeler
+        && data.total == data.totalTwoWheeler + data.totalFourWheeler
+        && data.rating is number && data.rating >= 0 && data.rating <= 5
+        && data.accent is string && data.accent.size() <= 30
+        && data.features is list && data.features.size() <= 20
+        && data.coordinates is list && data.coordinates.size() == 2
+        && data.coordinates[0] is number && data.coordinates[1] is number
+        && data.status in ['Live', 'Paused']
+        && data.operatorId == '77rBmRDzilXGdBqryH9kcpRjHSu1';
+    }
+
+    function validReservation(data) {
+      return data.keys().hasOnly([
+          'userId', 'operatorId', 'lotId', 'lotName', 'station', 'stationType', 'city', 'state',
+          'arrival', 'departure', 'arrivalTime', 'departureTime',
+          'bookingType', 'unitPrice', 'total', 'vehicleType', 'vehicleNumber', 'vehicleName',
+           'paymentStatus', 'status', 'createdAt', 'paymentExpiresAt', 'updatedAt'
+        ])
+        && data.keys().hasAll([
+          'userId', 'operatorId', 'lotId', 'lotName', 'station', 'stationType', 'city', 'state',
+          'arrival', 'departure', 'arrivalTime', 'departureTime',
+          'bookingType', 'unitPrice', 'total', 'vehicleType', 'vehicleNumber', 'vehicleName',
+           'paymentStatus', 'status', 'createdAt', 'paymentExpiresAt', 'updatedAt'
+        ])
+        && data.userId is string
+        && data.operatorId == '77rBmRDzilXGdBqryH9kcpRjHSu1'
+        && data.lotId is string && data.lotId.size() <= 100
+        && data.lotName is string && data.lotName.size() <= 100
+        && data.station is string && data.station.size() <= 100
+        && data.stationType in ['metro', 'railway']
+        && data.city == 'Hyderabad'
+        && data.state == 'Telangana'
+        && data.arrival is string && data.arrival.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.departure is string && data.departure.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && data.arrivalTime is string && data.arrivalTime.matches('^\\d{2}:\\d{2}$')
+        && data.departureTime is string && data.departureTime.matches('^\\d{2}:\\d{2}$')
+        && data.bookingType in ['full-day', 'overnight']
+        && data.unitPrice is number && data.unitPrice > 0 && data.unitPrice <= 100000
+        && data.total is number && data.total > 0 && data.total <= 10000000
+        && data.vehicleType in ['2-wheeler', '4-wheeler']
+        && data.vehicleNumber is string && data.vehicleNumber.size() >= 4 && data.vehicleNumber.size() <= 20
+        && data.vehicleName is string && data.vehicleName.size() >= 2 && data.vehicleName.size() <= 80
+         && data.paymentStatus in ['initiated', 'paid', 'failed']
+         && data.status in ['pending', 'confirmed', 'payment_failed', 'cancelled']
+         && data.createdAt is string && data.createdAt.size() <= 40
+         && data.paymentExpiresAt is string && data.paymentExpiresAt.size() <= 40
+         && data.updatedAt is string && data.updatedAt.size() <= 40;
+    }
+
+    match /parkingLots/{lotId} {
+      // Live lots are intentionally public so passengers can search before signing in.
+      allow read: if resource.data.status == 'Live'
+        || (isOperator() && resource.data.operatorId == request.auth.uid);
+      allow create: if isOperator() && validParkingLot(request.resource.data);
+      allow update: if isOperator()
+        && resource.data.operatorId == request.auth.uid
+        && request.resource.data.operatorId == resource.data.operatorId
+        && validParkingLot(request.resource.data);
+      allow update: if isAuthenticated()
+        && request.resource.data.operatorId == resource.data.operatorId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'available', 'availableTwoWheeler', 'availableFourWheeler',
+          'totalTwoWheeler', 'totalFourWheeler'
+        ])
+        && request.resource.data.available == resource.data.available - 1
+        && (
+          (request.resource.data.availableTwoWheeler == resource.data.availableTwoWheeler - 1
+            && request.resource.data.availableFourWheeler == resource.data.availableFourWheeler)
+          ||
+          (request.resource.data.availableFourWheeler == resource.data.availableFourWheeler - 1
+            && request.resource.data.availableTwoWheeler == resource.data.availableTwoWheeler)
+        )
+        && validParkingLot(request.resource.data);
+      allow delete: if isOperator() && resource.data.operatorId == request.auth.uid;
+    }
+
+    match /reservations/{reservationId} {
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.paymentStatus == 'initiated'
+        && validReservation(request.resource.data);
+      allow read: if isOwner(resource.data.userId)
+        || (isOperator() && resource.data.operatorId == request.auth.uid);
+      allow update: if validReservation(request.resource.data)
+        && (
+          (isOperator()
+            && resource.data.operatorId == request.auth.uid
+             && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'paymentStatus', 'updatedAt']))
+          || (isOwner(resource.data.userId)
+            && request.resource.data.userId == resource.data.userId
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+            && request.resource.data.status == 'cancelled')
+        );
+      allow delete: if false;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}

@@ -1,0 +1,6 @@
+# Playwright output at the repository root
+test-results/
+
+# OS noise
+.DS_Store
+Thumbs.db
