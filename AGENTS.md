@@ -40,6 +40,7 @@ npm run test:e2e   # playwright test
 ## Deployment
 
 - Public site: `https://parkn-go-web.vercel.app` — Vercel project `parkn-go-web`, team `tanishs-projects-77dfa876`; the local link lives in `.vercel/project.json` (gitignored).
+- Source: `https://github.com/PadalaTanish30/parkngo` on branch `main`; push with `git push`. The Vercel project was created from the CLI rather than imported from GitHub, so pushes do not trigger deployments.
 - Deploy with `vercel deploy --prod --yes` from `parkrail-web`. `vercel.json` pins the Vite preset, `npm run build`, and `dist`.
 - Vercel builds from uploaded source and reads `VITE_*` from the project's environment variables, not from `.env`. After changing `.env`, re-add each var with `vercel env add NAME production --value "$value" --force` and redeploy.
 - `.vercelignore` must keep excluding `.env`, `.env.local`, `dist`, `test-results`, and `.vercel`: the CLI did not apply `.gitignore` to those uploads.
